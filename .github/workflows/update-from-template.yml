@@ -84,7 +84,7 @@ jobs:
 
           echo "Trying to create auto-merged branch ${{ env.UPDATE_BRANCH_MERGED }}"
           git branch ${{ env.UPDATE_BRANCH_MERGED }} ${{ env.UPDATE_BRANCH }}
-          git checkout $ {{ env.UPDATE_BRANCH_MERGED }}
+          git checkout ${{ env.UPDATE_BRANCH_MERGED }}
           
           echo "Merging branch $base_branch into ${{ env.UPDATE_BRANCH_MERGED }}"
           git merge $base_branch
