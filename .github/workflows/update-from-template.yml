@@ -87,11 +87,8 @@ jobs:
           git checkout ${{ env.UPDATE_BRANCH_MERGED }}
           
           echo "Merging branch $base_branch into ${{ env.UPDATE_BRANCH_MERGED }}"
-          (
-            set +e
-            git merge $base_branch
-          )
-          if [ $? -ne 0 ]; then
+          git merge $base_branch || merge_exit_code=$? && merge_exit_code=$?
+          if [ $merge_exit_code -ne 0 ]; then
               echo "Auto merge failed! Manual merge required"
 
               echo "Cleaning up failed merge"
