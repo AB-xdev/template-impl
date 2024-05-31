@@ -88,6 +88,7 @@ jobs:
           
           echo "Merging branch $base_branch into ${{ env.UPDATE_BRANCH_MERGED }}"
           git merge $base_branch
+          echo $?
           if [ $? -ne 0 ]; then
               echo "Auto merge failed! Manual merge required"
 
