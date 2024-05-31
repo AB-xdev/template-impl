@@ -63,7 +63,8 @@ jobs:
             git push -f origin --delete ${{ env.UPDATE_BRANCH }} || true
             git push -f origin --delete ${{ env.UPDATE_BRANCH_MERGED }} || true
             
-            echo "abort=1" >> $GITHUB_OUTPUT
+            echo "create_update_branch_pr=false" >> $GITHUB_OUTPUT
+            echo "create_update_branch_merged_pr=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           
@@ -76,24 +77,54 @@ jobs:
           echo "Pushing update branch"
           git push -f -u origin ${{ env.UPDATE_BRANCH }}
           
-          echo "Getting current update branch"
-          current_update_branch=$(git branch --show-current)
-          echo "Current update branch is $current_update_branch"
-          echo "current_update_branch=$current_update_branch" >> $GITHUB_OUTPUT
+          echo "Getting base branch"
+          base_branch=$(git branch --show-current)
+          echo "Base branch is $base_branch"
+          echo "base_branch=$base_branch" >> $GITHUB_OUTPUT
 
+          echo "Trying to create auto-merged branch ${{ env.UPDATE_BRANCH_MERGED }}"
           git branch ${{ env.UPDATE_BRANCH_MERGED }} ${{ env.UPDATE_BRANCH }}
-          echo "Branch: $(git branch --show-current)"
-
-          echo "abort=0" >> $GITHUB_OUTPUT
+          git checkout $ {{ env.UPDATE_BRANCH_MERGED }}
           
-      - name: pull-request
-        if: steps.main.outputs.abort == 0
+          echo "Merging branch $base_branch into ${{ env.UPDATE_BRANCH_MERGED }}"
+          git merge $base_branch
+          if [ $? -ne 0 ]; then
+              echo "Auto merge failed! Manual merge required"
+
+              echo "Deleting auto-merge branch - if present"
+              git push -f origin --delete ${{ env.UPDATE_BRANCH_MERGED }} || true
+
+              echo "create_update_branch_pr=true" >> $GITHUB_OUTPUT
+              echo "create_update_branch_merged_pr=false" >> $GITHUB_OUTPUT
+              exit 0
+          fi
+
+          echo "Pushing auto-merged branch"
+          git push -f -u origin ${{ env.UPDATE_BRANCH_MERGED }}
+
+          echo "create_update_branch_pr=false" >> $GITHUB_OUTPUT
+          echo "create_update_branch_merged_pr=true" >> $GITHUB_OUTPUT
+          
+      - name: pull-request update_branch
+        if: steps.main.outputs.create_update_branch_pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh_pr_up() { 
             gh pr create -H "${{ env.UPDATE_BRANCH }}" "$@" || (git checkout "${{ env.UPDATE_BRANCH }}" && gh pr edit "$@")
           }
-          gh_pr_up -B "${{ steps.main.outputs.current_update_branch }}" \
+          gh_pr_up -B "${{ steps.main.outputs.base_branch }}" \
             --title "Update from template" \
+            --body "An automated PR to sync changes from the template into this repo"
+
+      - name: pull-request update_branch_merged
+        if: steps.main.outputs.create_update_branch_merged_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh_pr_up() { 
+            gh pr create -H "${{ env.UPDATE_BRANCH_MERGED }}" "$@" || (git checkout "${{ env.UPDATE_BRANCH_MERGED }}" && gh pr edit "$@")
+          }
+          gh_pr_up -B "${{ steps.main.outputs.base_branch }}" \
+            --title "Update from template (auto-merged)" \
             --body "An automated PR to sync changes from the template into this repo"
