@@ -87,9 +87,17 @@ jobs:
           git checkout ${{ env.UPDATE_BRANCH_MERGED }}
           
           echo "Merging branch $base_branch into ${{ env.UPDATE_BRANCH_MERGED }}"
-          git merge $base_branch || true
+          (
+            set +e
+            git merge $base_branch
+          )
           if [ $? -ne 0 ]; then
               echo "Auto merge failed! Manual merge required"
+
+              echo "Cleaning up failed merge"
+              git merge --abort
+              git checkout $base_branch
+              git branch -D ${{ env.UPDATE_BRANCH_MERGED }} || true
 
               echo "Deleting auto-merge branch - if present"
               git push -f origin --delete ${{ env.UPDATE_BRANCH_MERGED }} || true
