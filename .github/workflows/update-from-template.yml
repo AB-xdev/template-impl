@@ -104,7 +104,7 @@ jobs:
               exit 0
           fi
 
-          echo "Post processing: Trying to fill in 'template-placeholder'"
+          echo "Post processing: Trying to automatically fill in template variables"
           find . -type f \
             -not -path "./.git/**" \
             -not -path "./.github/workflows/update-from-template.yml" -print0 \
