@@ -114,7 +114,7 @@ jobs:
           echo "create_update_branch_merged_pr=true" >> $GITHUB_OUTPUT
           
       - name: pull-request update_branch
-        if: steps.main.outputs.create_update_branch_pr
+        if: ${{ steps.main.outputs.create_update_branch_pr }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -126,7 +126,7 @@ jobs:
             --body "An automated PR to sync changes from the template into this repo"
 
       - name: pull-request update_branch_merged
-        if: steps.main.outputs.create_update_branch_merged_pr
+        if: ${{ steps.main.outputs.create_update_branch_merged_pr }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
