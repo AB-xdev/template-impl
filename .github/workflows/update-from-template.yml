@@ -153,3 +153,72 @@ jobs:
           gh_pr_up -B "${{ steps.main.outputs.base_branch }}" \
             --title "Update from template (auto-merged)" \
             --body "An automated PR to sync changes from the template into this repo"
+
+      - name: Try to auto-merge pull-request update_branch_merged
+        id: auto-merge-check
+        if: steps.main.outputs.create_update_branch_merged_pr == 1
+        env:
+          GH_TOKEN: ${{ secrets.UPDATE_FROM_TEMPLATE_PAT }}
+        run: |
+          not_failed_conclusion="skipped|neutral|success"
+          not_relevant_app_slug="dependabot"
+
+          echo "Waiting for workflows to start..."
+          sleep 60s
+
+          for i in {1..10}; do
+            echo "Checking if PR can be auto-merged. Try: $i"
+
+            echo "Fetching checks"
+            cs_response=$(curl -sL \
+              --fail-with-body \
+              --connect-timeout 60 \
+              --max-time 120 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              https://api.github.com/repos/${{ github.repository }}/commits/${{ steps.main.outputs.update_branch_merged_commit }}/check-suites)
+            
+            cs_data=$(echo $cs_response | jq '.check_suites[] | { conclusion: .conclusion, slug: .app.slug, check_runs_url: .check_runs_url }')
+            echo $cs_data
+
+            if [[ -z "$cs_data" ]]; then
+              echo "No check suite data - Assuming that there are no checks to run"
+
+              echo "perform=1" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            cs_failed=$(echo $cs_data | jq "select (.conclusion == null or .conclusion | test(\"$not_failed_conclusion\") | not)")
+            if [[ -z "$cs_failed" ]]; then
+              echo "No check failed so far; Checking if relevant checks are still running"
+
+              cs_relevant_still_running=$(echo $cs_data | jq "select (.conclusion == null) | select (.slug | test(\"$not_relevant_app_slug\") | not)")
+              if [[ -z $cs_relevant_still_running ]]; then
+                echo "Relevant checks are still running"
+                echo $cs_relevant_still_running
+
+              else
+                echo "All relevant checks finished - PR can be merged"
+
+                echo "perform=1" >> $GITHUB_OUTPUT
+                exit 0
+              fi
+            else
+              echo "Detected failed check"
+              echo $cs_failed
+
+              echo "perform=0" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            echo "Waiting before next run..."
+            sleep 60s
+          done
+
+          echo "perform=0" >> $GITHUB_OUTPUT
+      
+      - name: Auto-merge pull-request
+        if: steps.auto-merge-check.outputs.perform == 1
+        run: |
+          echo "TODO: Merge code could be here"
