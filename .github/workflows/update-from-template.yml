@@ -130,7 +130,7 @@ jobs:
 
           echo "update_branch_merged_commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
-          echo "Restoring base branch"
+          echo "Restoring base branch $base_branch"
           git checkout $base_branch
 
           echo "create_update_branch_pr=0" >> $GITHUB_OUTPUT
@@ -227,6 +227,10 @@ jobs:
       - name: Auto-merge update_branch_merged
         if: steps.auto-merge-check.outputs.perform == 1
         run: |
+          base_branch="${{ steps.main.outputs.base_branch }}"
+          echo "Restoring base branch $base_branch"
+          git checkout $base_branch
+
           echo "Fetching..."
           git fetch
           echo "Pulling ${{ env.UPDATE_BRANCH_MERGED }}"
@@ -241,11 +245,10 @@ jobs:
             exit 0
           fi
 
-          current_branch=$(git branch --show-current)
-          echo "Ensuring that current branch $current_branch is up-to-date"
+          echo "Ensuring that current branch $base_branch is up-to-date"
           git pull
 
-          echo "Merging ${{ env.UPDATE_BRANCH_MERGED }} into $current_branch"
+          echo "Merging ${{ env.UPDATE_BRANCH_MERGED }} into $base_branch"
           git merge ${{ env.UPDATE_BRANCH_MERGED }} && merge_exit_code=$? || merge_exit_code=$?
           if [ $merge_exit_code -ne 0 ]; then
             echo "Unexpected merge failure $merge_exit_code - Requires manual resolution"
