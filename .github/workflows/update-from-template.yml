@@ -45,8 +45,8 @@ jobs:
           git config --global user.email "111048771+xdev-gh-bot@users.noreply.github.com"
           git config --global user.name "XDEV Bot"
 
-      - name: Main workflow
-        id: main
+      - name: Manage branches
+        id: manage-branches
         run: |
           echo "Adding remote template-repo"
           git remote add template ${{ env.REMOTE_URL }}
@@ -137,32 +137,32 @@ jobs:
           echo "create_update_branch_merged_pr=1" >> $GITHUB_OUTPUT
           
       - name: PR update_branch
-        if: steps.main.outputs.create_update_branch_pr == 1
+        if: steps.manage-branches.outputs.create_update_branch_pr == 1
         env:
           GH_TOKEN: ${{ secrets.UPDATE_FROM_TEMPLATE_PAT }}
         run: |
           gh_pr_up() { 
             gh pr create -H "${{ env.UPDATE_BRANCH }}" "$@" || (git checkout "${{ env.UPDATE_BRANCH }}" && gh pr edit "$@")
           }
-          gh_pr_up -B "${{ steps.main.outputs.base_branch }}" \
+          gh_pr_up -B "${{ steps.manage-branches.outputs.base_branch }}" \
             --title "Update from template" \
             --body "An automated PR to sync changes from the template into this repo"
 
       - name: PR update_branch_merged
-        if: steps.main.outputs.create_update_branch_merged_pr == 1
+        if: steps.manage-branches.outputs.create_update_branch_merged_pr == 1
         env:
           GH_TOKEN: ${{ secrets.UPDATE_FROM_TEMPLATE_PAT }}
         run: |
           gh_pr_up() { 
             gh pr create -H "${{ env.UPDATE_BRANCH_MERGED }}" "$@" || (git checkout "${{ env.UPDATE_BRANCH_MERGED }}" && gh pr edit "$@")
           }
-          gh_pr_up -B "${{ steps.main.outputs.base_branch }}" \
+          gh_pr_up -B "${{ steps.manage-branches.outputs.base_branch }}" \
             --title "Update from template (auto-merged)" \
             --body "An automated PR to sync changes from the template into this repo"
 
       - name: Checking if auto-merge for PR update_branch_merged can be done
         id: auto-merge-check
-        if: steps.main.outputs.create_update_branch_merged_pr == 1
+        if: steps.manage-branches.outputs.create_update_branch_merged_pr == 1
         env:
           GH_TOKEN: ${{ secrets.UPDATE_FROM_TEMPLATE_PAT }}
         run: |
@@ -183,7 +183,7 @@ jobs:
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer $GH_TOKEN" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
-              https://api.github.com/repos/${{ github.repository }}/commits/${{ steps.main.outputs.update_branch_merged_commit }}/check-suites)
+              https://api.github.com/repos/${{ github.repository }}/commits/${{ steps.manage-branches.outputs.update_branch_merged_commit }}/check-suites)
             
             cs_data=$(echo $cs_response | jq '.check_suites[] | { conclusion: .conclusion, slug: .app.slug, check_runs_url: .check_runs_url }')
             echo $cs_data
@@ -227,14 +227,14 @@ jobs:
       - name: Auto-merge update_branch_merged
         if: steps.auto-merge-check.outputs.perform == 1
         run: |
-          base_branch="${{ steps.main.outputs.base_branch }}"
+          base_branch="${{ steps.manage-branches.outputs.base_branch }}"
           echo "Restoring base branch $base_branch"
           git checkout $base_branch
 
           echo "Fetching..."
           git fetch
 
-          expected_commit="${{ steps.main.outputs.update_branch_merged_commit }}"
+          expected_commit="${{ steps.manage-branches.outputs.update_branch_merged_commit }}"
           actual_commit=$(git rev-parse origin/${{ env.UPDATE_BRANCH_MERGED }})
           if [[ "$expected_commit" != "$actual_commit" ]]; then
             echo "Branch ${{ env.UPDATE_BRANCH_MERGED }} contains unexpected commit $actual_commit"
