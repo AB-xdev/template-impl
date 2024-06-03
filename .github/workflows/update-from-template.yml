@@ -37,8 +37,8 @@ jobs:
       
       - name: Init Git
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
+          git config --global user.email "111048771+xdev-gh-bot@users.noreply.github.com"
+          git config --global user.name "XDEV Bot"
 
       - name: Main workflow
         id: main
@@ -164,9 +164,9 @@ jobs:
           not_relevant_app_slug="dependabot"
 
           echo "Waiting for workflows to start..."
-          sleep 10s
+          sleep 30s
 
-          for i in {1..10}; do
+          for i in {1..15}; do
             echo "Checking if PR can be auto-merged. Try: $i"
 
             echo "Fetching checks"
@@ -212,13 +212,46 @@ jobs:
             fi
 
             echo "Waiting before next run..."
-            sleep 10s
+            sleep 60s
           done
 
+          echo "Timed out"
           echo "perform=0" >> $GITHUB_OUTPUT
       
       - name: Auto-merge pull-request
         if: steps.auto-merge-check.outputs.perform == 1
         run: |
-          echo "TODO: Check if PR head is same as checked commit!"
-          echo "TODO: Merge code could be here"
+          echo "Fetching ${{ env.UPDATE_BRANCH_MERGED }}..."
+          git fetch ${{ env.UPDATE_BRANCH_MERGED }}
+
+          expected_commit="${{ steps.main.outputs.update_branch_merged_commit }}"
+          actual_commit=$(git rev-parse ${{ env.UPDATE_BRANCH_MERGED }})
+          if [[ "$expected_commit" != "$actual_commit" ]]; then
+            echo "Branch ${{ env.UPDATE_BRANCH_MERGED }} contains unexpected commit $actual_commit"
+            echo "Expected: $expected_commit"
+
+            exit 1
+          fi
+
+          current_branch=$(git branch --show-current)
+          echo "Ensuring that current branch is up-to-date"
+          git fetch
+          git pull
+
+          echo "Merging ${{ env.UPDATE_BRANCH_MERGED }} into $current_branch"
+          git merge ${{ env.UPDATE_BRANCH_MERGED }} && merge_exit_code=$? || merge_exit_code=$?
+          if [ $merge_exit_code -ne 0 ]; then
+            echo "Unexpected merge failure $merge_exit_code"
+            echo "Requires manual resolution"
+
+            exit 0
+          fi
+
+          echo "Pushing"
+          git push
+
+          echo "Cleaning up"
+          git branch -D ${{ env.UPDATE_BRANCH }} || true
+          git branch -D ${{ env.UPDATE_BRANCH_MERGED }} || true
+          git push -f origin --delete ${{ env.UPDATE_BRANCH }} || true
+          git push -f origin --delete ${{ env.UPDATE_BRANCH_MERGED }} || true
