@@ -150,6 +150,7 @@ jobs:
             --title "Update from template" \
             --body "An automated PR to sync changes from the template into this repo"
       
+      # Ensure that only a single PR is open (otherwise confusion and spam)
       - name: Close PR update_branch
         if: steps.manage-branches.outputs.try_close_update_branch_pr == 1
         env:
