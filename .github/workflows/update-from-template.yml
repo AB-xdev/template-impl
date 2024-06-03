@@ -122,6 +122,8 @@ jobs:
           echo "Pushing auto-merged branch"
           git push -f -u origin ${{ env.UPDATE_BRANCH_MERGED }}
 
+          echo "update_branch_merged_commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
           echo "Restoring base branch"
           git checkout $base_branch
 
