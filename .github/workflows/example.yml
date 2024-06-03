@@ -16,5 +16,3 @@ jobs:
           echo Sleep
           sleep 15
           echo Hello, world!
-          echo Kaboom
-          exit 1
