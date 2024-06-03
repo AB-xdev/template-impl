@@ -226,8 +226,10 @@ jobs:
       - name: Auto-merge pull-request
         if: steps.auto-merge-check.outputs.perform == 1
         run: |
-          echo "Fetching ${{ env.UPDATE_BRANCH_MERGED }}..."
-          git fetch ${{ env.UPDATE_BRANCH_MERGED }}
+          echo "Fetching..."
+          git fetch
+          echo "Pulling ${{ env.UPDATE_BRANCH_MERGED }}"
+          git pull origin ${{ env.UPDATE_BRANCH_MERGED }}
 
           expected_commit="${{ steps.main.outputs.update_branch_merged_commit }}"
           actual_commit=$(git rev-parse ${{ env.UPDATE_BRANCH_MERGED }})
@@ -239,8 +241,7 @@ jobs:
           fi
 
           current_branch=$(git branch --show-current)
-          echo "Ensuring that current branch is up-to-date"
-          git fetch
+          echo "Ensuring that current branch $current_branch is up-to-date"
           git pull
 
           echo "Merging ${{ env.UPDATE_BRANCH_MERGED }} into $current_branch"
