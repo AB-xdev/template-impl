@@ -248,6 +248,8 @@ jobs:
           echo "Ensuring that current branch $base_branch is up-to-date"
           git pull
 
+          git branch --show-current
+
           echo "Merging ${{ env.UPDATE_BRANCH_MERGED }} into $base_branch"
           git merge ${{ env.UPDATE_BRANCH_MERGED }} && merge_exit_code=$? || merge_exit_code=$?
           if [ $merge_exit_code -ne 0 ]; then
