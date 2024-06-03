@@ -164,7 +164,7 @@ jobs:
           not_relevant_app_slug="dependabot"
 
           echo "Waiting for workflows to start..."
-          sleep 60s
+          sleep 10s
 
           for i in {1..10}; do
             echo "Checking if PR can be auto-merged. Try: $i"
@@ -213,7 +213,7 @@ jobs:
             fi
 
             echo "Waiting before next run..."
-            sleep 60s
+            sleep 10s
           done
 
           echo "perform=0" >> $GITHUB_OUTPUT

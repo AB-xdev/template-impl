@@ -14,5 +14,5 @@ jobs:
       - name: Run a one-line script
         run: |
           echo Sleep
-          sleep 80
+          sleep 15
           echo Hello, world!
