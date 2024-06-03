@@ -1,9 +1,10 @@
 name: Update from Template
 
 # This workflow keeps the repo up to date with changes from the template repo (REMOTE_URL)
-# It duplicates the REMOTE_BRANCH (into UPDATE_BRANCH) and tries to merge it into the 
+# It duplicates the REMOTE_BRANCH (into UPDATE_BRANCH) and tries to merge it into 
 # this repos default branch (which is checked out here)
 # Note that this requires a PAT (Personal Access Token) - at best from a servicing account
+# PAT permissions: read:discussion, read:org, repo, workflow
 # Also note that you should have at least once merged the template repo into the current repo manually
 # otherwise a "refusing to merge unrelated histories" error might occur.
 
