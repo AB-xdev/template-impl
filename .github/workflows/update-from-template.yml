@@ -95,6 +95,7 @@ jobs:
           git merge $base_branch && merge_exit_code=$? || merge_exit_code=$?
           if [ $merge_exit_code -ne 0 ]; then
               echo "Auto merge failed! Manual merge required"
+              echo "::notice ::Auto merge failed - Manual merge required"
 
               echo "Cleaning up failed merge"
               git merge --abort
@@ -135,7 +136,7 @@ jobs:
           echo "create_update_branch_pr=0" >> $GITHUB_OUTPUT
           echo "create_update_branch_merged_pr=1" >> $GITHUB_OUTPUT
           
-      - name: pull-request update_branch
+      - name: PR update_branch
         if: steps.main.outputs.create_update_branch_pr == 1
         env:
           GH_TOKEN: ${{ secrets.UPDATE_FROM_TEMPLATE_PAT }}
@@ -147,7 +148,7 @@ jobs:
             --title "Update from template" \
             --body "An automated PR to sync changes from the template into this repo"
 
-      - name: pull-request update_branch_merged
+      - name: PR update_branch_merged
         if: steps.main.outputs.create_update_branch_merged_pr == 1
         env:
           GH_TOKEN: ${{ secrets.UPDATE_FROM_TEMPLATE_PAT }}
@@ -159,7 +160,7 @@ jobs:
             --title "Update from template (auto-merged)" \
             --body "An automated PR to sync changes from the template into this repo"
 
-      - name: Try to auto-merge pull-request update_branch_merged
+      - name: Checking if auto-merge for PR update_branch_merged can be done
         id: auto-merge-check
         if: steps.main.outputs.create_update_branch_merged_pr == 1
         env:
@@ -223,7 +224,7 @@ jobs:
           echo "Timed out"
           echo "perform=0" >> $GITHUB_OUTPUT
       
-      - name: Auto-merge pull-request
+      - name: Auto-merge update_branch_merged
         if: steps.auto-merge-check.outputs.perform == 1
         run: |
           echo "Fetching..."
@@ -237,7 +238,7 @@ jobs:
             echo "Branch ${{ env.UPDATE_BRANCH_MERGED }} contains unexpected commit $actual_commit"
             echo "Expected: $expected_commit"
 
-            exit 1
+            exit 0
           fi
 
           current_branch=$(git branch --show-current)
@@ -247,14 +248,14 @@ jobs:
           echo "Merging ${{ env.UPDATE_BRANCH_MERGED }} into $current_branch"
           git merge ${{ env.UPDATE_BRANCH_MERGED }} && merge_exit_code=$? || merge_exit_code=$?
           if [ $merge_exit_code -ne 0 ]; then
-            echo "Unexpected merge failure $merge_exit_code"
-            echo "Requires manual resolution"
+            echo "Unexpected merge failure $merge_exit_code - Requires manual resolution"
 
             exit 0
           fi
 
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then
-            echo "Dry run - Exit"
+            echo "Exiting due to dry run"
+
             exit 0
           fi
 
