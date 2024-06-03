@@ -136,8 +136,9 @@ jobs:
 
           echo "create_update_branch_pr=0" >> $GITHUB_OUTPUT
           echo "create_update_branch_merged_pr=1" >> $GITHUB_OUTPUT
+          echo "try_close_update_branch_pr=1" >> $GITHUB_OUTPUT
           
-      - name: PR update_branch
+      - name: Create/Update PR update_branch
         if: steps.manage-branches.outputs.create_update_branch_pr == 1
         env:
           GH_TOKEN: ${{ secrets.UPDATE_FROM_TEMPLATE_PAT }}
@@ -148,8 +149,15 @@ jobs:
           gh_pr_up -B "${{ steps.manage-branches.outputs.base_branch }}" \
             --title "Update from template" \
             --body "An automated PR to sync changes from the template into this repo"
+      
+      - name: Close PR update_branch
+        if: steps.manage-branches.outputs.try_close_update_branch_pr == 1
+        env:
+          GH_TOKEN: ${{ secrets.UPDATE_FROM_TEMPLATE_PAT }}
+        run: |
+          gh pr close "${{ env.UPDATE_BRANCH }}" || true
 
-      - name: PR update_branch_merged
+      - name: Create/Update PR update_branch_merged
         if: steps.manage-branches.outputs.create_update_branch_merged_pr == 1
         env:
           GH_TOKEN: ${{ secrets.UPDATE_FROM_TEMPLATE_PAT }}
