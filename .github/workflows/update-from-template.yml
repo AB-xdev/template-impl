@@ -233,11 +233,9 @@ jobs:
 
           echo "Fetching..."
           git fetch
-          echo "Pulling ${{ env.UPDATE_BRANCH_MERGED }}"
-          git pull origin ${{ env.UPDATE_BRANCH_MERGED }}
 
           expected_commit="${{ steps.main.outputs.update_branch_merged_commit }}"
-          actual_commit=$(git rev-parse ${{ env.UPDATE_BRANCH_MERGED }})
+          actual_commit=$(git rev-parse origin/${{ env.UPDATE_BRANCH_MERGED }})
           if [[ "$expected_commit" != "$actual_commit" ]]; then
             echo "Branch ${{ env.UPDATE_BRANCH_MERGED }} contains unexpected commit $actual_commit"
             echo "Expected: $expected_commit"
@@ -247,8 +245,6 @@ jobs:
 
           echo "Ensuring that current branch $base_branch is up-to-date"
           git pull
-
-          git branch --show-current
 
           echo "Merging ${{ env.UPDATE_BRANCH_MERGED }} into $base_branch"
           git merge ${{ env.UPDATE_BRANCH_MERGED }} && merge_exit_code=$? || merge_exit_code=$?
