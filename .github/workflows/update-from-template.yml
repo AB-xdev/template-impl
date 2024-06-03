@@ -11,6 +11,11 @@ on:
   schedule:
     - cron: '55 2 * * 1'
   workflow_dispatch:
+    inputs:
+      dry_run:
+        type: boolean
+        description: 'Dry run'
+        default: false
 
 env:
   UPDATE_BRANCH: update-from-template
@@ -164,7 +169,7 @@ jobs:
           not_relevant_app_slug="dependabot"
 
           echo "Waiting for workflows to start..."
-          sleep 30s
+          sleep 60s
 
           for i in {1..15}; do
             echo "Checking if PR can be auto-merged. Try: $i"
@@ -244,6 +249,11 @@ jobs:
             echo "Unexpected merge failure $merge_exit_code"
             echo "Requires manual resolution"
 
+            exit 0
+          fi
+
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            echo "Dry run - Exit"
             exit 0
           fi
 
