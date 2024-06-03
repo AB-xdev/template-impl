@@ -189,11 +189,11 @@ jobs:
               exit 0
             fi
 
-            cs_failed=$(echo $cs_data | jq $("select (.conclusion == null or .conclusion | test(\"$not_failed_conclusion\") | not)"))
+            cs_failed=$(echo $cs_data | jq --arg x "$not_failed_conclusion" 'select ((.conclusion == null or (.conclusion | test($x))) | not)'
             if [[ -z "$cs_failed" ]]; then
               echo "No check failed so far; Checking if relevant checks are still running"
 
-              cs_relevant_still_running=$(echo $cs_data | jq $("select (.conclusion == null) | select (.slug | test(\"$not_relevant_app_slug\") | not)"))
+              cs_relevant_still_running=$(echo $cs_data | jq --arg x "$not_relevant_app_slug" 'select (.conclusion == null) | select (.slug | test($x) | not)'
               if [[ -z $cs_relevant_still_running ]]; then
                 echo "Relevant checks are still running"
                 echo $cs_relevant_still_running
